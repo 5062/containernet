@@ -1004,6 +1004,28 @@ class Docker ( Host ):
             return None
         return parts[1]
 
+    def checkpoint(self, checkpoint_name):
+        """ Checkpoint a container """
+        if not self._is_container_running():
+            return
+        cmd = ["docker", "checkpoint", "create", self.did, checkpoint_name]
+        res = subprocess.run(cmd)
+        if res.returncode != 0:
+            warn("Warning: API error during container checkpoint.\n")
+
+    def restore(self, checkpoint_name):
+        """ Restore a container """
+        if self._is_container_running():
+            return
+        cmd = ["docker", "start", "--checkpoint", checkpoint_name, self.did]
+        res = subprocess.run(cmd)
+        if res.returncode != 0:
+            warn("Warning: API error during container restore.\n")
+
+        # fetch information about new container
+        self.dcinfo = self.dcli.inspect_container(self.dc)
+        self.did = self.dcinfo.get("Id")
+
     def terminate( self ):
         """ Stop docker container """
         if not self._is_container_running():
